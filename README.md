@@ -18,7 +18,8 @@ It works on macOS (Apple silicon) and on any Linux distribution.
 | `bootstrap.sh` | Sets up a new computer. Run it once. |
 | `rebuild.sh` | Applies your setup. Run it after every change. |
 | `flake.lock` | Pins the exact versions of everything, so each computer gets the same result. |
-| `scripts/` | The check that warns in new terminals when your setup needs attention. |
+| `scripts/` | Two tools: a check that warns in new terminals when your setup needs attention, and `sync-repos`. |
+| `home/.config/sync-repos/config.yaml` | The folders `sync-repos` keeps up to date. |
 | `.github/workflows/update-flake-lock.yml` | Updates `flake.lock` on GitHub every day. |
 
 On macOS, [nix-darwin](https://github.com/nix-darwin/nix-darwin) applies `darwin.nix` and `home.nix`.
@@ -91,6 +92,34 @@ my-setup: 2 uncommitted changes. Run git -C ~/.my-setup status
 
 When everything matches, new terminals print nothing.
 
+## Sync repos
+
+`sync-repos` keeps every git repo under the folders in `home/.config/sync-repos/config.yaml` up to date.
+It starts with `~/Codes`. Edit the list to match where you keep your code.
+Edits take effect right away, without `./rebuild.sh`.
+
+For each repo, it fetches every remote, then:
+
+- It fast-forwards branches that are behind their upstream. It never touches a branch that has its own commits, and never a checkout with uncommitted changes.
+- It deletes a local branch once its work is in the remote's default branch, whether by merge, rebase, or squash. It never deletes a remote branch.
+- It keeps any branch it can't prove was merged.
+  To spot squash merges more often, install [`gh`](https://cli.github.com) and sign in. `sync-repos` then checks GitHub for merged pull requests.
+
+Each deleted branch is logged with its commit to `~/.local/state/sync-repos/deleted-branches.tsv`.
+To bring one back, run `git branch NAME SHA`.
+
+It runs at login and every hour.
+On macOS, the latest run is logged to `~/Library/Logs/sync-repos.log`.
+On Linux, run `journalctl --user -u sync-repos` to see the log.
+
+You can also run it yourself:
+
+```sh
+sync-repos          # the folders in the config
+sync-repos DIR ...  # these folders instead
+sync-repos -n       # fetch only, change no branches
+```
+
 ## Automatic updates
 
 Every day, a GitHub Action updates `flake.lock` to the newest versions.
@@ -129,10 +158,10 @@ home-manager generations
 
 ## Tests
 
-The terminal check has tests that run against throwaway git repos:
+Both tools have tests that run against throwaway git repos:
 
 ```sh
-nix shell nixpkgs#python3 nixpkgs#git -c python3 -m unittest scripts/test_rebuild_check.py
+nix develop -c python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 ## License

@@ -17,6 +17,7 @@ EXCLUDED = (
     "bootstrap.sh",
     "rebuild.sh",
     "scripts/test_*.py",
+    "home/.config/*",
 )
 
 

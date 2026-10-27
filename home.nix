@@ -1,7 +1,10 @@
 { pkgs, ... }:
 
 {
-  imports = [ ./scripts/rebuild-check.nix ];
+  imports = [
+    ./scripts/rebuild-check.nix
+    ./scripts/sync-repos.nix
+  ];
 
   home.stateVersion = "26.11";
 

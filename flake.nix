@@ -40,5 +40,18 @@
             }
           ];
         });
+
+      devShells = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" "aarch64-linux" ] (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = pkgs.mkShell {
+            packages = [
+              (pkgs.python3.withPackages (ps: [ ps.pyyaml ]))
+              pkgs.git
+            ];
+          };
+        });
     };
 }

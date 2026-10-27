@@ -28,6 +28,7 @@ SEED = {
     ".gitignore": ".state/\n",
     "README.md": "# my-setup\n",
     "LICENSE": "MIT\n",
+    "home/.config/sync-repos/config.yaml": "directories:\n  - ~/Codes\n",
 }
 
 
@@ -137,6 +138,7 @@ class RebuildCheckTest(unittest.TestCase):
         self.recorded()
         w.push("README.md", "# my-setup, now with docs\n")
         w.push("LICENSE", "MIT, updated\n")
+        w.push("home/.config/sync-repos/config.yaml", "directories:\n  - ~/src\n")
         w.pull()
 
         self.assertRan(w.run(), 0, "")
