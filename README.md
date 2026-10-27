@@ -19,7 +19,7 @@ It works on macOS (Apple silicon) and on any Linux distribution.
 | `rebuild.sh` | Applies your setup. Run it after every change. |
 | `flake.lock` | Pins the exact versions of everything, so each computer gets the same result. |
 | `scripts/` | The check that warns in new terminals when your setup needs attention. |
-| `.github/workflows/update-flake-lock.yml` | Updates `flake.lock` on GitHub every other day. |
+| `.github/workflows/update-flake-lock.yml` | Updates `flake.lock` on GitHub every day. |
 
 On macOS, [nix-darwin](https://github.com/nix-darwin/nix-darwin) applies `darwin.nix` and `home.nix`.
 On Linux, [Home Manager](https://github.com/nix-community/home-manager) applies `home.nix`.
@@ -93,7 +93,7 @@ When everything matches, new terminals print nothing.
 
 ## Automatic updates
 
-Every other day, a GitHub Action updates `flake.lock` to the newest versions.
+Every day, a GitHub Action updates `flake.lock` to the newest versions.
 It checks that the updated setup still builds, then merges it.
 If the build fails, it leaves the pull request open with a comment.
 
