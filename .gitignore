@@ -1,1 +1,3 @@
 result
+.state/
+__pycache__/

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")"
-
-username="$(sed -nE 's/^ *username = "(.*)";/\1/p' flake.nix)"
-if [ "$username" != "$(id -un)" ]; then
-  echo "flake.nix has username = \"$username\", but you are \"$(id -un)\". Edit flake.nix first." >&2
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+cd "$DIR"
+if [ ! -e ~/.my-setup ]; then
+  echo "The ~/.my-setup link is missing or points nowhere. Run ./bootstrap.sh to link this checkout." >&2
   exit 1
 fi
 
@@ -15,6 +14,7 @@ case "$(uname -s)" in
     else
       sudo "$(command -v nix)" run nix-darwin -- switch --flake .#mac
     fi
+    PROFILE="/etc/profiles/per-user/$(id -un)"
     ;;
   Linux)
     if command -v home-manager >/dev/null; then
@@ -22,5 +22,12 @@ case "$(uname -s)" in
     else
       nix run home-manager -- switch -b backup --flake ".#$(uname -m)-linux"
     fi
+    PROFILE="$HOME/.nix-profile"
+    ;;
+  *)
+    echo "Unsupported system: $(uname -s)" >&2
+    exit 1
     ;;
 esac
+
+"$PROFILE/bin/rebuild-check" --record "$DIR"

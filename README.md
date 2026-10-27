@@ -15,40 +15,45 @@ It works on macOS (Apple silicon) and on any Linux distribution.
 | `flake.nix` | Holds your username and connects the other files. |
 | `home.nix` | Your tools and shell settings. Used on macOS and Linux. |
 | `darwin.nix` | macOS system settings, like the Dock and key repeat. Used on macOS only. |
-| `switch.sh` | Applies your setup. Run it after every change. |
+| `bootstrap.sh` | Sets up a new computer. Run it once. |
+| `rebuild.sh` | Applies your setup. Run it after every change. |
 | `flake.lock` | Pins the exact versions of everything, so each computer gets the same result. |
+| `scripts/` | The check that warns in new terminals when your setup needs attention. |
+| `.github/workflows/update-flake-lock.yml` | Updates `flake.lock` on GitHub every other day. |
 
 On macOS, [nix-darwin](https://github.com/nix-darwin/nix-darwin) applies `darwin.nix` and `home.nix`.
 On Linux, [Home Manager](https://github.com/nix-community/home-manager) applies `home.nix`.
 
 ## Set up a computer
 
-1. Install Nix:
+1. Make sure you have `git`.
+   On macOS, run `xcode-select --install`. On Linux, install it with your package manager.
+2. Fork this repository on GitHub, so you can save your own changes. Then clone your fork. Any folder works:
    ```sh
-   curl -fsSL https://install.determinate.systems/nix | sh -s -- install
+   git clone https://github.com/YOUR-NAME/my-setup-template.git ~/my-setup
    ```
-   Then open a new terminal.
-2. Fork this repository on GitHub, so you can save your own changes. Then clone your fork.
-   This command uses the `git` that comes with Nix, so it works before you install anything else:
+3. Run the bootstrap script:
    ```sh
-   nix run nixpkgs#git -- clone https://github.com/YOUR-NAME/my-setup-template.git ~/my-setup
+   ~/my-setup/bootstrap.sh
+   ```
+   It installs Nix, links the folder to `~/.my-setup`, and offers to set your username in `flake.nix`.
+   Then it applies the setup. On macOS, it asks for your password.
+4. Commit and push the username change:
+   ```sh
    cd ~/my-setup
+   git commit -am "Set my username"
+   git push
    ```
-3. Open `flake.nix` and change `username = "alice";` to your username.
-   To see your username, run `whoami`.
-4. Apply the setup:
-   ```sh
-   ./switch.sh
-   ```
-   On macOS, it asks for your password.
 5. Open a new terminal. Run `ll` to check that it worked.
 
 If you already have files that the setup manages, such as `~/.bashrc` or `~/.zshrc`, they get renamed with a `.backup` ending.
 Copy anything you want to keep from them into `home.nix`.
 
+If you move the folder later, run `./bootstrap.sh` again to update the link.
+
 ## Change your setup
 
-Edit a file, then run `./switch.sh` again.
+Edit a file, then run `./rebuild.sh`.
 
 For example, to install `htop`, add it to `home.packages` in `home.nix`:
 
@@ -68,16 +73,44 @@ To find what you can add:
 - Settings for `darwin.nix`: [nix-darwin options](https://nix-darwin.github.io/nix-darwin/manual/)
 
 Nix only reads files that git knows about.
-If you add a new file, run `git add` on it before `./switch.sh`.
+If you add a new file, run `git add` on it before `./rebuild.sh`.
 
-## Update everything
+## Messages in new terminals
+
+Each new terminal checks your setup and prints a line when something needs attention:
+
+```text
+my-setup: the active setup differs from origin/main. Run ~/.my-setup/rebuild.sh
+my-setup: 2 uncommitted changes. Run git -C ~/.my-setup status
+```
+
+- The first line means your computer isn't running what's on `origin/main`.
+  If `origin/main` has new commits, the line tells you to pull first.
+  Changes to files that don't affect the setup, like this README, don't count.
+- The second line means you have edits you haven't committed yet. Commit and push them so they don't get lost.
+
+When everything matches, new terminals print nothing.
+
+## Automatic updates
+
+Every other day, a GitHub Action updates `flake.lock` to the newest versions.
+It checks that the updated setup still builds, then merges it.
+If the build fails, it leaves the pull request open with a comment.
+
+GitHub turns this off in forks until you allow it:
+
+1. In your fork, open the **Actions** tab and enable workflows.
+2. Go to **Settings > Actions > General**. Under **Workflow permissions**, check **Allow GitHub Actions to create and approve pull requests**.
+
+To get the updates on a computer, run `git pull`, then `./rebuild.sh`.
+A new terminal reminds you when an update is waiting.
+
+To update right away without waiting for GitHub:
 
 ```sh
 nix flake update
-./switch.sh
+./rebuild.sh
 ```
-
-This updates `flake.lock` to the newest versions. Commit it so your other computers get the same versions.
 
 ## Undo a change
 
@@ -92,6 +125,14 @@ On Linux, list your past setups, then run `activate` in the one you want to go b
 ```sh
 home-manager generations
 /nix/store/...-home-manager-generation/activate
+```
+
+## Tests
+
+The terminal check has tests that run against throwaway git repos:
+
+```sh
+nix shell nixpkgs#python3 nixpkgs#git -c python3 -m unittest scripts/test_rebuild_check.py
 ```
 
 ## License

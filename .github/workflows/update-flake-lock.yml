@@ -1,0 +1,43 @@
+name: update flake.lock
+
+on:
+  schedule:
+    - cron: "0 17 */2 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/determinate-nix-action@v3
+      - id: update
+        uses: DeterminateSystems/update-flake-lock@v29
+        with:
+          branch: update_flake_lock_action
+          commit-msg: update flake.lock
+          pr-title: update flake.lock
+      - name: Check the updated setup
+        if: steps.update.outputs.pull-request-number != ''
+        run: |
+          git fetch origin update_flake_lock_action
+          git checkout --detach FETCH_HEAD
+          nix build .#homeConfigurations.x86_64-linux.activationPackage --no-link
+          nix eval --raw .#darwinConfigurations.mac.system.drvPath
+      - name: Merge the PR when the check passes
+        if: steps.update.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.update.outputs.pull-request-number }}
+        run: gh pr merge "$PR" --squash --delete-branch
+      - name: Flag the PR when the check fails
+        if: failure() && steps.update.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.update.outputs.pull-request-number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: gh pr comment "$PR" --body "The updated setup failed to build. Do not merge yet. Build log - $RUN_URL"
