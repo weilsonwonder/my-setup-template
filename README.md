@@ -93,3 +93,7 @@ On Linux, list your past setups, then run `activate` in the one you want to go b
 home-manager generations
 /nix/store/...-home-manager-generation/activate
 ```
+
+## License
+
+[MIT](LICENSE). Use it, change it, and share it however you like.
